@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { createLearningSession, getLearningSessionBySessionId, getChatLogsBySessionId, createChatLog } from "./db";
 import { v4 as uuidv4 } from "uuid";
+import { generateMentorResponse } from "./llmService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -116,25 +117,28 @@ export const appRouter = router({
           contentType: "text",
         });
 
-        // TODO: Integrate with LLM API to generate AI response
-        // For now, return a placeholder response
-        const assistantResponse = `I received your question about ${session.topic}: "${input.message}". 
-        The AI response generation will be implemented in the next phase with LLM integration.`;
+        // Generate AI response using LLM
+        const llmResponse = await generateMentorResponse(
+          session.topic,
+          input.message,
+          input.sessionId
+        );
 
         // Save assistant response
         const chatLog = await createChatLog({
           sessionId: input.sessionId,
           role: "assistant",
-          content: assistantResponse,
-          contentType: "text",
+          content: llmResponse.content,
+          contentType: llmResponse.contentType,
+          metadata: llmResponse.metadata ? JSON.stringify(llmResponse.metadata) : undefined,
         });
 
         return {
           id: chatLog?.id,
           role: "assistant",
-          content: assistantResponse,
-          contentType: "text",
-          metadata: null,
+          content: llmResponse.content,
+          contentType: llmResponse.contentType,
+          metadata: llmResponse.metadata,
           createdAt: chatLog?.createdAt,
         };
       }),
