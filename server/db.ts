@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, learningSessions, InsertLearningSession, LearningSession, chatLogs, InsertChatLog, ChatLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,125 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+/**
+ * Learning Session Queries
+ */
+
+export async function createLearningSession(session: InsertLearningSession): Promise<LearningSession | null> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create learning session: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.insert(learningSessions).values(session);
+    // Fetch the created record
+    const created = await db.select().from(learningSessions).where(eq(learningSessions.sessionId, session.sessionId)).limit(1);
+    return created.length > 0 ? created[0] : null;
+  } catch (error) {
+    console.error("[Database] Failed to create learning session:", error);
+    throw error;
+  }
+}
+
+export async function getLearningSessionBySessionId(sessionId: string): Promise<LearningSession | null> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get learning session: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.select().from(learningSessions).where(eq(learningSessions.sessionId, sessionId)).limit(1);
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("[Database] Failed to get learning session:", error);
+    throw error;
+  }
+}
+
+export async function updateLearningSession(sessionId: string, updates: Partial<Omit<LearningSession, 'id' | 'createdAt'>>): Promise<LearningSession | null> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot update learning session: database not available");
+    return null;
+  }
+
+  try {
+    await db.update(learningSessions).set(updates).where(eq(learningSessions.sessionId, sessionId));
+    return getLearningSessionBySessionId(sessionId);
+  } catch (error) {
+    console.error("[Database] Failed to update learning session:", error);
+    throw error;
+  }
+}
+
+/**
+ * Chat Log Queries
+ */
+
+export async function createChatLog(log: InsertChatLog): Promise<ChatLog | null> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create chat log: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.insert(chatLogs).values(log);
+    // Fetch the created record by ID
+    const created = await db.select().from(chatLogs).orderBy(chatLogs.id).limit(1);
+    return created.length > 0 ? created[0] : null;
+  } catch (error) {
+    console.error("[Database] Failed to create chat log:", error);
+    throw error;
+  }
+}
+
+export async function getChatLogsBySessionId(sessionId: string): Promise<ChatLog[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get chat logs: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db.select().from(chatLogs).where(eq(chatLogs.sessionId, sessionId)).orderBy(chatLogs.createdAt);
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get chat logs:", error);
+    throw error;
+  }
+}
+
+export async function getChatLogById(id: number): Promise<ChatLog | null> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get chat log: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.select().from(chatLogs).where(eq(chatLogs.id, id)).limit(1);
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("[Database] Failed to get chat log:", error);
+    throw error;
+  }
+}
+
+export async function deleteChatLogsBySessionId(sessionId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot delete chat logs: database not available");
+    return;
+  }
+
+  try {
+    await db.delete(chatLogs).where(eq(chatLogs.sessionId, sessionId));
+  } catch (error) {
+    console.error("[Database] Failed to delete chat logs:", error);
+    throw error;
+  }
+}
