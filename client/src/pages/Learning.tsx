@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Send, ArrowLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Streamdown } from "streamdown";
+import { EconomicGraph, GraphData } from "@/components/EconomicGraph";
 
 interface ChatMessage {
   id?: number;
@@ -155,42 +156,80 @@ export default function Learning() {
               </div>
             ) : (
               messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <Card
-                    className={`max-w-xs md:max-w-md lg:max-w-lg ${
-                      message.role === "user"
-                        ? "bg-blue-600 border-blue-500"
-                        : "bg-slate-700 border-slate-600"
-                    }`}
-                  >
-                    <CardContent className="p-4">
-                      {message.contentType === "text" ? (
-                        <div
-                          className={`text-sm ${
-                            message.role === "user"
-                              ? "text-white"
-                              : "text-slate-100"
-                          }`}
-                        >
-                          <Streamdown>{message.content}</Streamdown>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-slate-300">
-                          {message.content}
-                        </div>
-                      )}
-                      {message.createdAt && (
-                        <p className="text-xs text-slate-400 mt-2">
-                          {new Date(message.createdAt).toLocaleTimeString("ja-JP")}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
+                <div key={index}>
+                  {/* User Message */}
+                  {message.role === "user" && (
+                    <div className="flex justify-end">
+                      <Card className="max-w-xs md:max-w-md lg:max-w-lg bg-blue-600 border-blue-500">
+                        <CardContent className="p-4">
+                          <div className="text-sm text-white">
+                            <Streamdown>{message.content}</Streamdown>
+                          </div>
+                          {message.createdAt && (
+                            <p className="text-xs text-blue-200 mt-2">
+                              {new Date(message.createdAt).toLocaleTimeString("ja-JP")}
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Assistant Message */}
+                  {message.role === "assistant" && (
+                    <div className="flex justify-start">
+                      <div className="max-w-xs md:max-w-md lg:max-w-lg">
+                        {/* Text Content */}
+                        {message.contentType === "text" && (
+                          <Card className="bg-slate-700 border-slate-600">
+                            <CardContent className="p-4">
+                              <div className="text-sm text-slate-100">
+                                <Streamdown>{message.content}</Streamdown>
+                              </div>
+                              {message.createdAt && (
+                                <p className="text-xs text-slate-400 mt-2">
+                                  {new Date(message.createdAt).toLocaleTimeString("ja-JP")}
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Graph Content */}
+                        {message.contentType === "graph_data" && message.metadata && (
+                          <div className="w-full">
+                            <EconomicGraph data={message.metadata as GraphData} />
+                            {message.createdAt && (
+                              <p className="text-xs text-slate-400 mt-2">
+                                {new Date(message.createdAt).toLocaleTimeString("ja-JP")}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Scenario Content */}
+                        {message.contentType === "scenario" && (
+                          <Card className="bg-slate-700 border-slate-600">
+                            <CardHeader>
+                              <CardTitle className="text-sm text-slate-100">
+                                シナリオ分析
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-slate-100">
+                                <Streamdown>{message.content}</Streamdown>
+                              </div>
+                              {message.createdAt && (
+                                <p className="text-xs text-slate-400 mt-2">
+                                  {new Date(message.createdAt).toLocaleTimeString("ja-JP")}
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}

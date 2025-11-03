@@ -1,6 +1,7 @@
 import { invokeLLM } from "./_core/llm";
 import { getChatLogsBySessionId } from "./db";
 import { SYSTEM_PROMPT, createUserContext, getTopicSpecificPrompt } from "./prompts";
+import { generateGraphFromRequest } from "./graphGenerator";
 
 export interface LLMResponse {
   content: string;
@@ -10,10 +11,6 @@ export interface LLMResponse {
 
 /**
  * Generate an AI response for the economics mentor
- * @param topic The economic topic being discussed
- * @param userMessage The user's question or input
- * @param sessionId The session ID for context
- * @returns The AI response with content and metadata
  */
 export async function generateMentorResponse(
   topic: string,
@@ -67,18 +64,27 @@ export async function generateMentorResponse(
     }
 
     // Determine content type based on the response
-    const contentType = detectContentType(content);
+    const contentType = detectContentType(content, userMessage);
     let metadata: Record<string, any> | undefined;
 
-    // If it's graph data, try to parse it
+    // If it's graph data, try to generate or parse it
     if (contentType === "graph_data") {
+      // First try to parse JSON from response
       try {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           metadata = JSON.parse(jsonMatch[0]);
         }
       } catch (e) {
-        console.warn("Failed to parse graph data:", e);
+        console.warn("Failed to parse graph data from response:", e);
+      }
+      
+      // If no metadata, try to generate graph from request
+      if (!metadata) {
+        const generatedGraph = generateGraphFromRequest(userMessage);
+        if (generatedGraph) {
+          metadata = generatedGraph;
+        }
       }
     }
 
@@ -112,8 +118,17 @@ function buildSystemPrompt(topic: string): string {
  * Detect the type of content in the response
  */
 function detectContentType(
-  content: string
+  content: string,
+  userMessage: string
 ): "text" | "graph_data" | "scenario" {
+  // Check if user is asking for a graph
+  const graphKeywords = ["グラフ", "描いて", "示して", "曲線", "図", "chart", "graph", "draw", "visualize"];
+  const isGraphRequest = graphKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
+  
+  if (isGraphRequest) {
+    return "graph_data";
+  }
+
   // Check for JSON structure (graph data)
   if (content.includes('{"type"') || content.includes('"axes"')) {
     return "graph_data";
