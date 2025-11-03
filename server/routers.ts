@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createLearningSession, getLearningSessionBySessionId, getChatLogsBySessionId, createChatLog } from "./db";
 import { v4 as uuidv4 } from "uuid";
 import { generateMentorResponse } from "./llmService";
+import { searchEconomicNews, generateEconomicScenario } from "./newsService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -20,16 +21,7 @@ export const appRouter = router({
     }),
   }),
 
-  /**
-   * Learning Router
-   * Handles session management and chat interactions for the economics learning platform
-   */
   learning: router({
-    /**
-     * Start a new learning session
-     * Input: topic (required), optional description
-     * Output: sessionId, topic, createdAt
-     */
     startSession: publicProcedure
       .input(
         z.object({
@@ -56,11 +48,6 @@ export const appRouter = router({
         };
       }),
 
-    /**
-     * Get an existing learning session and its chat history
-     * Input: sessionId
-     * Output: session details and chat logs
-     */
     getSession: publicProcedure
       .input(z.object({ sessionId: z.string() }))
       .query(async ({ input }) => {
@@ -90,11 +77,6 @@ export const appRouter = router({
         };
       }),
 
-    /**
-     * Send a message and get AI response
-     * Input: sessionId, message
-     * Output: assistant response with metadata
-     */
     chat: publicProcedure
       .input(
         z.object({
@@ -103,13 +85,11 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        // Verify session exists
         const session = await getLearningSessionBySessionId(input.sessionId);
         if (!session) {
           throw new Error("Session not found");
         }
 
-        // Save user message
         await createChatLog({
           sessionId: input.sessionId,
           role: "user",
@@ -117,14 +97,12 @@ export const appRouter = router({
           contentType: "text",
         });
 
-        // Generate AI response using LLM
         const llmResponse = await generateMentorResponse(
           session.topic,
           input.message,
           input.sessionId
         );
 
-        // Save assistant response
         const chatLog = await createChatLog({
           sessionId: input.sessionId,
           role: "assistant",
@@ -143,11 +121,6 @@ export const appRouter = router({
         };
       }),
 
-    /**
-     * Get chat history for a session
-     * Input: sessionId
-     * Output: array of chat logs
-     */
     getChatHistory: publicProcedure
       .input(z.object({ sessionId: z.string() }))
       .query(async ({ input }) => {
@@ -160,6 +133,28 @@ export const appRouter = router({
           metadata: log.metadata ? JSON.parse(log.metadata) : null,
           createdAt: log.createdAt,
         }));
+      }),
+
+    searchNews: publicProcedure
+      .input(z.object({ topic: z.string() }))
+      .query(async ({ input }) => {
+        return await searchEconomicNews(input.topic);
+      }),
+
+    analyzeScenario: publicProcedure
+      .input(
+        z.object({
+          topic: z.string(),
+          scenario: z.string(),
+        })
+      )
+      .query(async ({ input }) => {
+        const analysis = await generateEconomicScenario(input.topic, input.scenario);
+        return {
+          scenario: input.scenario,
+          analysis,
+          contentType: "scenario",
+        };
       }),
   }),
 });
