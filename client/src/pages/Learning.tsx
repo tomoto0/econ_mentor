@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Send, ArrowLeft } from "lucide-react";
+import { Loader2, Send, ArrowLeft, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Streamdown } from "streamdown";
 import { EconomicGraph, GraphData } from "@/components/EconomicGraph";
@@ -25,9 +25,9 @@ export default function Learning() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load session from localStorage
   useEffect(() => {
     const storedSessionId = localStorage.getItem("economentor_sessionId");
     if (!storedSessionId) {
@@ -37,7 +37,6 @@ export default function Learning() {
     setSessionId(storedSessionId);
   }, [navigate]);
 
-  // Fetch session and chat history
   const { data: sessionData, isLoading: isLoadingSession } = trpc.learning.getSession.useQuery(
     { sessionId: sessionId || "" },
     { enabled: !!sessionId }
@@ -51,12 +50,10 @@ export default function Learning() {
     }
   }, [sessionData]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Chat mutation
   const chatMutation = trpc.learning.chat.useMutation({
     onSuccess: (response) => {
       setMessages((prev) => [
@@ -71,10 +68,12 @@ export default function Learning() {
         },
       ]);
       setIsSending(false);
+      setError(null);
     },
     onError: (error) => {
       console.error("Chat error:", error);
-      alert("メッセージ送信に失敗しました");
+      const errorMessage = error?.message || "メッセージ送信に失敗しました";
+      setError(errorMessage);
       setIsSending(false);
     },
   });
@@ -92,14 +91,15 @@ export default function Learning() {
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsSending(true);
+    setError(null);
 
     try {
       await chatMutation.mutateAsync({
         sessionId,
         message: inputValue,
       });
-    } catch (error) {
-      console.error("Failed to send message:", error);
+    } catch (err) {
+      console.error("Failed to send message:", err);
     }
   };
 
@@ -121,7 +121,6 @@ export default function Learning() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
-      {/* Header */}
       <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -141,9 +140,18 @@ export default function Learning() {
         </div>
       </header>
 
-      {/* Chat Container */}
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
+          {error && (
+            <div className="mb-4 p-4 bg-red-900/20 border border-red-700/50 rounded-lg flex gap-3">
+              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-400 text-sm font-medium">エラーが発生しました</p>
+                <p className="text-red-300/70 text-xs mt-1">{error}</p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {messages.length === 0 ? (
               <div className="text-center py-12">
@@ -157,7 +165,6 @@ export default function Learning() {
             ) : (
               messages.map((message, index) => (
                 <div key={index}>
-                  {/* User Message */}
                   {message.role === "user" && (
                     <div className="flex justify-end">
                       <Card className="max-w-xs md:max-w-md lg:max-w-lg bg-blue-600 border-blue-500">
@@ -175,11 +182,9 @@ export default function Learning() {
                     </div>
                   )}
 
-                  {/* Assistant Message */}
                   {message.role === "assistant" && (
                     <div className="flex justify-start">
                       <div className="max-w-xs md:max-w-md lg:max-w-lg">
-                        {/* Text Content */}
                         {message.contentType === "text" && (
                           <Card className="bg-slate-700 border-slate-600">
                             <CardContent className="p-4">
@@ -195,7 +200,6 @@ export default function Learning() {
                           </Card>
                         )}
 
-                        {/* Graph Content */}
                         {message.contentType === "graph_data" && message.metadata && (
                           <div className="w-full">
                             <EconomicGraph data={message.metadata as GraphData} />
@@ -207,7 +211,6 @@ export default function Learning() {
                           </div>
                         )}
 
-                        {/* Scenario Content */}
                         {message.contentType === "scenario" && (
                           <Card className="bg-slate-700 border-slate-600">
                             <CardHeader>
@@ -238,7 +241,6 @@ export default function Learning() {
         </div>
       </div>
 
-      {/* Input Area */}
       <div className="border-t border-slate-700 bg-slate-900/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 max-w-3xl">
           <form onSubmit={handleSendMessage} className="flex gap-2">

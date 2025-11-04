@@ -3,16 +3,31 @@
  * Generates realistic economic graph data based on user requests
  */
 
-import { GraphData } from "../client/src/components/EconomicGraph";
+export interface GraphData {
+  type: string;
+  title: string;
+  description?: string;
+  axes: {
+    x: { label: string; unit?: string };
+    y: { label: string; unit?: string };
+  };
+  series: Array<{
+    name: string;
+    type: "line" | "bar" | "scatter";
+    data: Array<[number, number]> | number[];
+    color?: string;
+    fill?: boolean;
+    borderWidth?: number;
+    tension?: number;
+  }>;
+  annotations?: Array<{ x: number | string; y: number; text: string }>;
+}
 
-/**
- * Generate supply and demand curve data
- */
 export function generateSupplyDemandGraph(): GraphData {
   return {
     type: "supply_demand",
     title: "需要と供給曲線",
-    description: "需要曲線（下降）と供給曲線（上昇）の交点が市場均衡点です",
+    description: "需要曲線（下降）と供給曲線（上昇）の交点が市場均衡点です。",
     axes: {
       x: { label: "数量", unit: "単位" },
       y: { label: "価格", unit: "円" },
@@ -67,14 +82,11 @@ export function generateSupplyDemandGraph(): GraphData {
   };
 }
 
-/**
- * Generate cost curves data
- */
 export function generateCostCurvesGraph(): GraphData {
   return {
     type: "cost_curves",
     title: "費用曲線",
-    description: "平均費用曲線（AC）と限界費用曲線（MC）の関係を示します",
+    description: "平均費用曲線（AC）と限界費用曲線（MC）の関係を示します。",
     axes: {
       x: { label: "生産量", unit: "単位" },
       y: { label: "費用", unit: "円" },
@@ -129,14 +141,11 @@ export function generateCostCurvesGraph(): GraphData {
   };
 }
 
-/**
- * Generate inflation and unemployment trade-off (Phillips Curve)
- */
 export function generatePhillipsCurveGraph(): GraphData {
   return {
     type: "phillips_curve",
     title: "フィリップス曲線",
-    description: "インフレーション率と失業率の関係を示します",
+    description: "インフレーション率と失業率の関係を示します。",
     axes: {
       x: { label: "失業率", unit: "%" },
       y: { label: "インフレーション率", unit: "%" },
@@ -172,9 +181,6 @@ export function generatePhillipsCurveGraph(): GraphData {
   };
 }
 
-/**
- * Generate GDP growth data
- */
 export function generateGDPGrowthGraph(): GraphData {
   const gdpData: Array<[number, number]> = [
     [2015, 500],
@@ -182,7 +188,7 @@ export function generateGDPGrowthGraph(): GraphData {
     [2017, 545],
     [2018, 570],
     [2019, 590],
-    [2020, 560], // COVID-19 impact
+    [2020, 560],
     [2021, 590],
     [2022, 620],
     [2023, 650],
@@ -192,7 +198,7 @@ export function generateGDPGrowthGraph(): GraphData {
   return {
     type: "gdp_growth",
     title: "GDP成長",
-    description: "実質GDPの推移を示します",
+    description: "実質GDPの推移を示します。",
     axes: {
       x: { label: "年", unit: "年" },
       y: { label: "GDP", unit: "10億円" },
@@ -202,7 +208,7 @@ export function generateGDPGrowthGraph(): GraphData {
         name: "実質GDP",
         type: "line",
         color: "green",
-        data: gdpData as Array<[number, number]>,
+        data: gdpData,
         fill: true,
         tension: 0.4,
         borderWidth: 2,
@@ -218,14 +224,11 @@ export function generateGDPGrowthGraph(): GraphData {
   };
 }
 
-/**
- * Generate indifference curves
- */
 export function generateIndifferenceCurvesGraph(): GraphData {
   return {
     type: "indifference_curves",
     title: "無差別曲線",
-    description: "消費者の効用が同じ商品の組み合わせを示します",
+    description: "消費者の効用が同じ商品の組み合わせを示します。",
     axes: {
       x: { label: "商品X", unit: "単位" },
       y: { label: "商品Y", unit: "単位" },
@@ -273,26 +276,163 @@ export function generateIndifferenceCurvesGraph(): GraphData {
   };
 }
 
-/**
- * Map user requests to graph generators
- */
+export function generateInflationGraph(): GraphData {
+  return {
+    type: "inflation",
+    title: "インフレーション率の推移",
+    description: "過去10年間のインフレーション率の変化を示します。",
+    axes: {
+      x: { label: "年", unit: "年" },
+      y: { label: "インフレーション率", unit: "%" },
+    },
+    series: [
+      {
+        name: "インフレーション率",
+        type: "line",
+        color: "orange",
+        data: [
+          [2015, 0.8],
+          [2016, -0.1],
+          [2017, 0.5],
+          [2018, 1.0],
+          [2019, 0.5],
+          [2020, 0.0],
+          [2021, 0.3],
+          [2022, 2.5],
+          [2023, 3.2],
+          [2024, 2.8],
+        ],
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+      },
+    ],
+  };
+}
+
+export function generateLaborMarketGraph(): GraphData {
+  return {
+    type: "labor_market",
+    title: "労働市場：需要と供給",
+    description: "労働力の需要曲線と供給曲線の交点が市場均衡賃金です。",
+    axes: {
+      x: { label: "労働量", unit: "人" },
+      y: { label: "賃金", unit: "万円/月" },
+    },
+    series: [
+      {
+        name: "労働需要曲線",
+        type: "line",
+        color: "blue",
+        data: [
+          [10, 50],
+          [20, 45],
+          [30, 40],
+          [40, 35],
+          [50, 30],
+          [60, 25],
+          [70, 20],
+          [80, 15],
+          [90, 10],
+          [100, 5],
+        ],
+        tension: 0.4,
+        borderWidth: 2,
+      },
+      {
+        name: "労働供給曲線",
+        type: "line",
+        color: "red",
+        data: [
+          [10, 5],
+          [20, 10],
+          [30, 15],
+          [40, 20],
+          [50, 25],
+          [60, 30],
+          [70, 35],
+          [80, 40],
+          [90, 45],
+          [100, 50],
+        ],
+        tension: 0.4,
+        borderWidth: 2,
+      },
+    ],
+    annotations: [
+      {
+        x: 50,
+        y: 30,
+        text: "市場均衡 (L=50, W=30万円)",
+      },
+    ],
+  };
+}
+
 export function generateGraphFromRequest(request: string): GraphData | null {
   const lowerRequest = request.toLowerCase();
 
-  if (lowerRequest.includes("需要") && lowerRequest.includes("供給")) {
+  // Supply and demand
+  if (
+    (lowerRequest.includes("需要") && lowerRequest.includes("供給")) ||
+    lowerRequest.includes("supply") ||
+    lowerRequest.includes("demand")
+  ) {
     return generateSupplyDemandGraph();
   }
-  if (lowerRequest.includes("費用") || lowerRequest.includes("コスト")) {
+
+  // Cost curves
+  if (
+    lowerRequest.includes("費用") ||
+    lowerRequest.includes("コスト") ||
+    lowerRequest.includes("cost")
+  ) {
     return generateCostCurvesGraph();
   }
-  if (lowerRequest.includes("フィリップス") || (lowerRequest.includes("失業") && lowerRequest.includes("インフレ"))) {
+
+  // Phillips curve
+  if (
+    lowerRequest.includes("フィリップス") ||
+    lowerRequest.includes("phillips") ||
+    (lowerRequest.includes("失業") && lowerRequest.includes("インフレ"))
+  ) {
     return generatePhillipsCurveGraph();
   }
-  if (lowerRequest.includes("GDP") || lowerRequest.includes("成長")) {
+
+  // GDP
+  if (lowerRequest.includes("gdp") || lowerRequest.includes("成長")) {
     return generateGDPGrowthGraph();
   }
-  if (lowerRequest.includes("無差別") || lowerRequest.includes("効用")) {
+
+  // Indifference curves
+  if (
+    lowerRequest.includes("無差別") ||
+    lowerRequest.includes("効用") ||
+    lowerRequest.includes("indifference")
+  ) {
     return generateIndifferenceCurvesGraph();
+  }
+
+  // Inflation
+  if (
+    lowerRequest.includes("インフレ") ||
+    lowerRequest.includes("inflation")
+  ) {
+    return generateInflationGraph();
+  }
+
+  // Labor market
+  if (
+    lowerRequest.includes("労働") ||
+    lowerRequest.includes("賃金") ||
+    lowerRequest.includes("labor")
+  ) {
+    return generateLaborMarketGraph();
+  }
+
+  // Default: supply and demand
+  if (lowerRequest.includes("グラフ") || lowerRequest.includes("描")) {
+    return generateSupplyDemandGraph();
   }
 
   return null;
