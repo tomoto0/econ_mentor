@@ -156,6 +156,87 @@ export const appRouter = router({
           contentType: "scenario",
         };
       }),
+
+    // Quiz endpoints
+    getQuizzes: publicProcedure
+      .input(z.object({ sessionId: z.string() }))
+      .query(async ({ input }) => {
+        return [];
+      }),
+
+    generateQuiz: publicProcedure
+      .input(
+        z.object({
+          sessionId: z.string(),
+          topic: z.string(),
+          count: z.number().default(3),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return { quizzes: [] };
+      }),
+
+    submitQuizAnswer: publicProcedure
+      .input(
+        z.object({
+          quizId: z.number(),
+          userAnswer: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return { success: true };
+      }),
+
+    // Practice problem endpoints
+    getPracticeProblems: publicProcedure
+      .input(z.object({ sessionId: z.string() }))
+      .query(async ({ input }) => {
+        return [];
+      }),
+
+    generatePracticeProblems: publicProcedure
+      .input(
+        z.object({
+          sessionId: z.string(),
+          topic: z.string(),
+          difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+          count: z.number().default(3),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return { problems: [] };
+      }),
+
+    // Note endpoints
+    getNotes: publicProcedure
+      .input(z.object({ sessionId: z.string() }))
+      .query(async ({ input }) => {
+        return [];
+      }),
+
+    createNote: publicProcedure
+      .input(
+        z.object({
+          sessionId: z.string(),
+          noteText: z.string(),
+          category: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return { success: true };
+      }),
+
+    // Performance endpoints
+    getSessionPerformance: publicProcedure
+      .input(z.object({ sessionId: z.string() }))
+      .query(async ({ input }) => {
+        return {
+          totalProblems: 0,
+          correctAnswers: 0,
+          accuracyRate: 0,
+          currentDifficulty: "medium",
+        };
+      }),
   }),
 });
 
