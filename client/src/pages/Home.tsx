@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Loader2, BookOpen, MessageSquare, TrendingUp } from "lucide-react";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 
@@ -13,6 +13,29 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [topic, setTopic] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // SEO: Set document title and meta tags
+  useEffect(() => {
+    document.title = "EconoMentor - AIで学ぶ経済学 | 無料オンライン学習プラットフォーム";
+    
+    // Set meta description
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute('content', 'EconoMentorは、AIメンターとの対話を通じて経済学を学べる無料オンラインプラットフォームです。需要供給曲線、インフレーション、ゲーム理論など、複雑な経済理論をグラフや実例で分かりやすく解説します。');
+    
+    // Set meta keywords
+    let metaKeywords = document.querySelector('meta[name="keywords"]');
+    if (!metaKeywords) {
+      metaKeywords = document.createElement('meta');
+      metaKeywords.setAttribute('name', 'keywords');
+      document.head.appendChild(metaKeywords);
+    }
+    metaKeywords.setAttribute('content', '経済学, AI学習, オンライン教育, 需要と供給, インフレーション, ゲーム理論, GDP, 金融政策, マクロ経済学, ミクロ経済学, 無料学習, EconoMentor');
+  }, []);
 
   const startSessionMutation = trpc.learning.startSession.useMutation({
     onSuccess: (data) => {
