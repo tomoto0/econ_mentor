@@ -35,6 +35,44 @@ export default function Home() {
       document.head.appendChild(metaKeywords);
     }
     metaKeywords.setAttribute('content', '経済学, AI学習, オンライン教育, 需要と供給, インフレーション, ゲーム理論, GDP, 金融政策, マクロ経済学, ミクロ経済学, 無料学習, EconoMentor');
+    
+    // Set Open Graph meta tags
+    const ogTags = [
+      { property: 'og:title', content: 'EconoMentor - AIで学ぶ経済学' },
+      { property: 'og:description', content: 'AIメンターとの対話を通じて経済学を学べる無料オンラインプラットフォーム。グラフ、シナリオ分析、最新ニュースで実践的な知識を習得。' },
+      { property: 'og:image', content: `${window.location.origin}/og-image.png` },
+      { property: 'og:url', content: window.location.href },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:site_name', content: 'EconoMentor' },
+    ];
+    
+    ogTags.forEach(({ property, content }) => {
+      let meta = document.querySelector(`meta[property="${property}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('property', property);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    });
+    
+    // Set Twitter Card meta tags
+    const twitterTags = [
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'EconoMentor - AIで学ぶ経済学' },
+      { name: 'twitter:description', content: 'AIメンターとの対話を通じて経済学を学べる無料オンラインプラットフォーム' },
+      { name: 'twitter:image', content: `${window.location.origin}/og-image.png` },
+    ];
+    
+    twitterTags.forEach(({ name, content }) => {
+      let meta = document.querySelector(`meta[name="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    });
   }, []);
 
   const startSessionMutation = trpc.learning.startSession.useMutation({
