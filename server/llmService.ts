@@ -192,3 +192,197 @@ Structure your response with:
     contentType: "scenario",
   };
 }
+
+
+// Quiz and Practice Problem Types
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+  difficulty: "easy" | "medium" | "hard";
+}
+
+export interface PracticeProblemData {
+  problem: string;
+  solution: string[];
+  answer: string;
+  hints: string[];
+  difficulty: "easy" | "medium" | "hard";
+}
+
+/**
+ * Generate quiz questions using LLM
+ */
+export async function generateQuizQuestions(
+  topic: string,
+  count: number = 3,
+  difficulty: "easy" | "medium" | "hard" = "medium"
+): Promise<QuizQuestion[]> {
+  try {
+    const difficultyGuide = {
+      easy: "基礎的な概念の理解を確認する簡単な問題。専門用語の定義や基本的な関係性を問う。",
+      medium: "概念の応用や複数の要素の関連性を問う中程度の問題。グラフの読み取りや簡単な計算を含む。",
+      hard: "複雑な分析や批判的思考を必要とする難しい問題。複数の経済モデルの統合や現実世界への応用を問う。"
+    };
+
+    const prompt = `あなたは経済学の専門家です。「${topic}」に関する${count}問の選択式クイズを作成してください。
+
+難易度: ${difficulty} - ${difficultyGuide[difficulty]}
+
+以下のJSON形式で回答してください。必ず有効なJSONのみを出力し、他のテキストは含めないでください：
+
+{
+  "quizzes": [
+    {
+      "question": "問題文",
+      "options": ["(A) 選択肢A", "(B) 選択肢B", "(C) 選択肢C", "(D) 選択肢D"],
+      "correctAnswer": "A",
+      "explanation": "正解の解説",
+      "difficulty": "${difficulty}"
+    }
+  ]
+}
+
+注意事項：
+- 選択肢は必ず(A), (B), (C), (D)の形式で記述
+- correctAnswerは"A", "B", "C", "D"のいずれか
+- 解説は詳しく、学習に役立つ内容を含める
+- 経済学の正確な知識に基づいた問題を作成`;
+
+    const response = await invokeLLM({
+      messages: [
+        { role: "system", content: "You are an expert economics educator. Always respond with valid JSON only." },
+        { role: "user", content: prompt }
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "quiz_response",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              quizzes: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    question: { type: "string" },
+                    options: { type: "array", items: { type: "string" } },
+                    correctAnswer: { type: "string" },
+                    explanation: { type: "string" },
+                    difficulty: { type: "string" }
+                  },
+                  required: ["question", "options", "correctAnswer", "explanation", "difficulty"],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ["quizzes"],
+            additionalProperties: false
+          }
+        }
+      }
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (typeof content === "string") {
+      const parsed = JSON.parse(content);
+      return parsed.quizzes || [];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error("Error generating quiz questions:", error);
+    throw new Error("Failed to generate quiz questions");
+  }
+}
+
+/**
+ * Generate practice problems using LLM
+ */
+export async function generatePracticeProblemsLLM(
+  topic: string,
+  count: number = 3,
+  difficulty: "easy" | "medium" | "hard" = "medium"
+): Promise<PracticeProblemData[]> {
+  try {
+    const difficultyGuide = {
+      easy: "基礎的な計算や概念の適用。単純な需要供給の計算、基本的なグラフの読み取りなど。",
+      medium: "複数のステップを必要とする問題。均衡価格の計算、弾力性の計算、簡単な最適化問題など。",
+      hard: "複雑な分析や数学的推論を必要とする問題。ゲーム理論、一般均衡、動学的分析など。"
+    };
+
+    const prompt = `あなたは経済学の専門家です。「${topic}」に関する${count}問の練習問題を作成してください。
+
+難易度: ${difficulty} - ${difficultyGuide[difficulty]}
+
+以下のJSON形式で回答してください。必ず有効なJSONのみを出力し、他のテキストは含めないでください：
+
+{
+  "problems": [
+    {
+      "problem": "問題文（具体的な数値や状況を含む）",
+      "solution": ["ステップ1: 解説", "ステップ2: 解説", "ステップ3: 解説"],
+      "answer": "最終的な答え",
+      "hints": ["ヒント1", "ヒント2"],
+      "difficulty": "${difficulty}"
+    }
+  ]
+}
+
+注意事項：
+- 問題は具体的な数値や状況を含める
+- 解答は段階的に説明し、各ステップの理由を明確にする
+- ヒントは問題を解く上での考え方のガイドを提供
+- 経済学の正確な知識に基づいた問題を作成`;
+
+    const response = await invokeLLM({
+      messages: [
+        { role: "system", content: "You are an expert economics educator. Always respond with valid JSON only." },
+        { role: "user", content: prompt }
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "practice_response",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              problems: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    problem: { type: "string" },
+                    solution: { type: "array", items: { type: "string" } },
+                    answer: { type: "string" },
+                    hints: { type: "array", items: { type: "string" } },
+                    difficulty: { type: "string" }
+                  },
+                  required: ["problem", "solution", "answer", "hints", "difficulty"],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ["problems"],
+            additionalProperties: false
+          }
+        }
+      }
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (typeof content === "string") {
+      const parsed = JSON.parse(content);
+      return parsed.problems || [];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error("Error generating practice problems:", error);
+    throw new Error("Failed to generate practice problems");
+  }
+}
